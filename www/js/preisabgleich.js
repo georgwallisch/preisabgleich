@@ -165,6 +165,54 @@ function artikelsuche(suchstring, avkcheck, output) {
 	});	
 }
 
+function calcMode(data) {
+
+	if(typeof data != 'object') {
+		return false;
+	}
+	
+	let mode = [];
+	
+	if((data.length < 3)) {
+		for(let i = 0; i < data.length; ++i) {
+			mode.push(data[i]);
+		}
+	} else {
+			
+		let n = [];
+		let indices = [];
+				
+		for(let i = 0; i < data.length; ++i) {
+			
+			let j = indices.indexOf(data[i]);
+			
+			if(j < 0) {
+					indices.push(data[i]);
+					n.push(1);
+				} else {
+					++n[j];
+				}				
+		}
+		
+		let max_n = n[0];
+		
+		for(let i = 0; i < n.length; ++i) {
+			if(n[i] > max_n) {
+				max_n = n[i];
+			}
+		}
+		
+		for(let i = 0; i < n.length; ++i) {
+			if(n[i] == max_n) {
+				mode.push(indices[i]);
+			//	console.log('Type of index '+indices[i]+' is '+(typeof indices[i]));
+			}
+		}
+	}
+	
+	return mode;	
+}
+
 function generateTable(hitlist, column_map, table_id, simpletable, price_cols, table_class, thead_class) {
 	/* table_class	
 	  var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK'};
@@ -217,50 +265,65 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 	
 	var cspan = Object.keys(column_map).length + 1;
 	
+	var prices = {};
+	var prices_mode = {};
+	/*
 	var avg_prices = {};
 	var rms_prices = {};
 	var prices_sum = {};
 	var prices_qsum = {};
 	var prices_n = {};
-	
+	*/
 				
 	if(!simpletable) {
 		$('<th>').appendTo(tr);
 	} else {
-		console.log('Berechne AVGs..');
+		console.log('Berechne Moduswerte..');
 		
 		for(let i in price_cols) {
 			let c = price_cols[i];
+			prices[c] = [];
+/*	
 			avg_prices[c] = 0;
 			rms_prices = {};
 			prices_sum[c] = 0;
 			prices_qsum[c] = 0;
 			prices_n[c] = 0;
-			
+*/				
 		}
 		
 		for(let row in hitlist) {
 			let item = hitlist[row];
 			for(let c in column_map) {			
 				if(price_cols.includes(c)) {
+					prices[c].push(Number.parseFloat(item[c]));
+					/*
 					prices_sum[c] += Number.parseFloat(item[c]);
 					prices_qsum[c] += (prices_sum[c] * prices_sum[c]);
 					++prices_n[c];
+					*/
 				}				
 			}
 		}
 		
 		for(let i in price_cols) {
 			let c = price_cols[i];
+			prices_mode[c] = calcMode(prices[c]);			/*
 			avg_prices[c] = Math.round(prices_sum[c] / prices_n[c] * 100)/100;
 			rms_prices[c] = Math.round(Math.sqrt(prices_qsum[c] / prices_n[c]) * 100)/100;
+			*/
+			
 		}
+		
+		debug2box(prices_mode, 'Modus-Werte');
+
 		/*
 		debug2box(price_cols);
 		debug2box(prices_sum);
-		debug2box(prices_n);*/
+		debug2box(prices_n);
 		debug2box(avg_prices, "AVGs");
 		debug2box(rms_prices, "RMS");
+		*/
 
 	}
 
@@ -291,6 +354,26 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 				}
 						
 				if(simpletable) {
+					if(prices_mode[c].length == 1) {
+						let pmode = prices_mode[c][0];
+					//*
+						console.log('Type of modus '+pmode+' is '+(typeof pmode));
+						console.log('Type of cnum '+cnum+' is '+(typeof cnum));
+					// */
+						if(cnum > pmode) {
+							cc['class'] += ' gt_than_mode';
+							console.log('Preis ' + cnum + ' ist GRÖSSER als der Modus von ' + pmode +'!');
+						} else if(cnum < pmode) {
+							console.log('Preis ' + cnum + ' ist kleiner als der Modus von ' + pmode +'!');
+							cc['class'] += ' lt_than_mode';
+						}
+					} else if(prices_mode[c].length > 1) {
+							cc['class'] += ' more_modes';
+					} else {
+							console.log('Hä? Länge des Modus-Array für ' + c + ' ist ' + prices_mode[c].length +'!');
+
+					}
+					/*
 					if(cnum > avg_prices[c]) {
 						cc['class'] += ' gt_than_avg';
 						console.log('Preis ' + cnum + ' ist GRÖSSER als der Durchschnitt von ' + avg_prices[c]+'!');
@@ -298,6 +381,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 						console.log('Preis ' + cnum + ' ist kleiner als der Durchschnitt von ' + avg_prices[c]+'!');
 						cc['class'] += ' lt_than_avg';
 					}
+					*/
 				}
 				
 			}

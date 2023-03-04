@@ -48,10 +48,23 @@ h1.company {
 	color: lightgray;
 }
 
+/*
 .gt_than_avg, .lt_than_avg {
 	background-color: #ffcccc;
 }
+*/
 
+.more_modes {
+	background-color: #ffcccc;
+}
+
+.gt_than_mode {
+	background-color: #ff99cc;
+}
+
+.lt_than_mode {
+	background-color: #ffcc99;
+}
 
 /*
 h2 {
