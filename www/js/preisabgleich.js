@@ -1,6 +1,8 @@
 const ajax_url = "ajax.php";
 let standorte = [];
 var min_search_length = 3;
+var searchStartTimeout = null;
+const searchStartDelay = 300;
 
 function activateBox(boxname, header, force_refresh) {
 	
@@ -140,11 +142,13 @@ function artikelsuche(suchstring, avkcheck, output) {
 	if(suchstring.length < min_search_length) {
 		$(output).empty();
 		$('<p>', {'class':'text-warning'}).appendTo(output).append('Suchanfrage ist zu kurz!');
+		console.log('Suchestring '+suchstring+' ist zu kurz. (Min. '+min_search_length+' Zeichen)');
 		return;
 	}
 	
 	/* $(output).append(spinner());*/
-	
+		
+	console.log('Starte Suche nach '+suchstring);
 	
 	getAjax(p).done(function (r) {
 			$(output).empty();
@@ -254,7 +258,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 		thead_class = 'thead-light';
 	}
 	
-	console.log('Wir erzeugen jetzt eine Tabelle mit '+hitlist.length+' Zeilen');
+//	console.log('Wir erzeugen jetzt eine Tabelle mit '+hitlist.length+' Zeilen');
 	
 	var table = $('<table>', table_attr);
 	var thead = $('<thead>', {'class':thead_class}).appendTo(table);
@@ -413,7 +417,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 	
 	table.tablesorter();
 	
-	console.log('Und jetzt übergeben wir die Tabelle');
+	//console.log('Und jetzt übergeben wir die Tabelle');
 	
 	return table;
 }
@@ -452,10 +456,14 @@ $(document).ready(function() {
 	var sfd = $('<div>', {'class':'form-group'}).appendTo(sf);
 	
 	$('<label>', {'for':'searchInput'}).appendTo(sf).append('Artikelsuche');
-    $('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sf).bind('input', function(){ artikelsuche($(this).val(), $('#avkCheck').prop('checked'), ergebnis); });
+    $('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sf).on('input', function(){ 
+    		if(searchStartTimeout != null) clearTimeout(searchStartTimeout);  
+    		searchStartTimeout = setTimeout(function() { artikelsuche($('#searchInput').val(), $('#avkCheck').prop('checked'), ergebnis); }, searchStartDelay);   
+    		console.log('Verzögere Suche um '+searchStartDelay+' ms.');
+    });
     
     var sfd = $('<div>', {'class':'form-group form-check">'}).appendTo(sf);
-    $('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sf);
+    $('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sf).on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), ergebnis); });;
     $('<label>', {'for':'avkCheck', 'class':'form-check-label'}).appendTo(sf).append('Nur Artikel mit unterschiedlichen AVKs an den verschiedenen Standorten');
 
 });
