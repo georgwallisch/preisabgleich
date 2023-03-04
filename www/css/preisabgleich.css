@@ -1,0 +1,91 @@
+body {
+  padding-top: 5rem;
+}
+
+.mainInfo {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.col_graph {
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.ym-wrapper {
+	max-width:100em;
+}
+
+.databox h2 {
+	text-align: center;
+}
+
+h1.company {
+  text-align: center;
+  padding-bottom: 1em;
+}
+
+.plus-button::before {
+  content: "+";
+}
+
+.hiddenRow {
+    padding: 0 !important;
+}
+
+.moreinfo {
+	padding: 1em 2em;
+
+}
+
+.preis {
+	/*
+	text-align: right;
+	*/
+}
+
+.isnull {
+	color: lightgray;
+}
+
+.gt_than_avg, .lt_than_avg {
+	background-color: #ffcccc;
+}
+
+
+/*
+h2 {
+	margin: 2em 0 0.5em;
+	padding: 0.2em 0.5em;
+	background: #ffcc66;
+}
+
+h3 {
+	margin: 2em 0 0.5em;
+	padding: 0.2em 0.5em;
+}
+*/
+#gauges div.gaugecontainer {
+	float: left;
+	margin: 0.5em;
+}
+
+#gauges div.gauge_rrd_type {
+	clear: both;	
+}
+
+#gauges .gauge_type_temp .gauge_value {
+	display: none;
+}
+/*
+#gauges .gauge_type_other .gauge_value {
+	position: relative;
+	top: 235px;
+	left: 132px;
+}
+*/
+#gauges {
+	clear: both;	
+}
+
+
