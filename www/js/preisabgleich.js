@@ -173,11 +173,9 @@ function calcMode(data) {
 	
 	let mode = [];
 	
-	if((data.length < 3)) {
-		for(let i = 0; i < data.length; ++i) {
-			mode.push(data[i]);
-		}
-	} else {
+	if(data.length == 1) {
+		mode.push(data[0]);
+	} else if(data.length > 1) {
 			
 		let n = [];
 		let indices = [];
