@@ -121,7 +121,7 @@ function getAjax(params) {
 
 }
 
-function artikelsuche(suchstring, avkcheck, output) {
+function artikelsuche(suchstring, avkcheck, abdatacheck, output) {
 		
 	if(typeof suchstring != 'string' ) {
 		$(output).empty();
@@ -137,9 +137,13 @@ function artikelsuche(suchstring, avkcheck, output) {
 		}	
 	}
 	
+	if(typeof abdatacheck == 'string' ) {
+			p['abdata'] = abdatacheck;
+	}
+	
 	//console.log('AVK-Check ist '+avkcheck+' ('+(typeof avkcheck)+' )');
 	
-	if(suchstring.length < min_search_length) {
+	if(avkcheck != true && suchstring.length < min_search_length) {
 		$(output).empty();
 		$('<p>', {'class':'text-warning'}).appendTo(output).append('Suchanfrage ist zu kurz!');
 		console.log('Suchestring '+suchstring+' ist zu kurz. (Min. '+min_search_length+' Zeichen)');
@@ -159,9 +163,9 @@ function artikelsuche(suchstring, avkcheck, output) {
 			if(r['found'] > 0 ) {
 				$('<p>', {'class':'text-info'}).appendTo(output).append(r['found']+' Treffer:');
 				
-				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK'}; 
+				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK','ABDATA':'ABDATA-Artikel?'};
 				var h = r['hitlist'];
-				generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk']).appendTo(output);
+				generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk'], ['ABDATA']).appendTo(output);
 
 			} else {
 				$('<p>', {'class':'text-info'}).appendTo(output).append('Kein Treffer zu dieser Suche!');
@@ -215,7 +219,11 @@ function calcMode(data) {
 	return mode;	
 }
 
-function generateTable(hitlist, column_map, table_id, simpletable, price_cols, table_class, thead_class) {
+function isArray(value) {
+  return Array.isArray(value);
+}
+
+function generateTable(hitlist, column_map, table_id, simpletable, price_cols, bool_cols, table_class, thead_class) {
 	/* table_class	
 	  var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK'};
 	*/
@@ -234,8 +242,12 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 	
 	// console.log('price_cols '+price_cols+' ('+(typeof price_cols)+')');
 	
-	if(typeof price_cols != 'object') {
+	if(!isArray(price_cols)) {
 		price_cols = [];
+	}
+	
+	if(!isArray(bool_cols)) {
+		bool_cols = [];
 	}
 	
 	if(typeof table_id == 'string') {
@@ -345,9 +357,20 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 		}
 		
 		for(let c in column_map) {
-			let cval = item[c].toString();
 			let cnum = Number.parseFloat(item[c]);
 			let cc = null;
+			let cval = item[c].toString();
+
+			if(bool_cols.includes(c)) {
+				if(cnum == 0) {
+					cval = 'Nein';
+					cc = {'class':'is_nein'};
+				} else {
+					cval = 'Ja';
+					cc = {'class':'is_ja'};
+				}
+			}
+			
 			if(price_cols.includes(c)) {
 				cval = cval.replace('.',',')+' €';
 				cc = {'class':'preis'};
@@ -407,7 +430,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, t
 					if(rr['found'] > 0 ) {
 						var cl = {'name':'Standort', 'eek':'EEK', 'evk':'EVK', 'avk':'AVK', 'kalkulationsmodell':'Kalkulationsmodell'}; 
 						var hh = rr['hitlist'];
-						generateTable(hh, cl, row_id+'_tab', true, ['eek','evk', 'avk'], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);	
+						generateTable(hh, cl, row_id+'_tab', true, ['eek', 'evk', 'avk'], [], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);	
 					}
 				});
 				
@@ -453,18 +476,33 @@ $(document).ready(function() {
 	var suche = $('<div>', {'class':'container my-2','id':'c_suche'}).appendTo(mainbox);
 	var ergebnis = $('<div>', {'class':'container my-2','id':'c_ergebnis'}).appendTo(mainbox);
 	var sf  = $('<form>').appendTo(suche);
-	var sfd = $('<div>', {'class':'form-group'}).appendTo(sf);
+	let sfd = $('<div>', {'class':'form-group'}).appendTo(sf);
 	
-	$('<label>', {'for':'searchInput'}).appendTo(sf).append('Artikelsuche');
-    $('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sf).on('input', function(){ 
+	$('<label>', {'for':'searchInput'}).appendTo(sfd).append('Artikelsuche');
+    $('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sfd).on('input', function(){ 
     		if(searchStartTimeout != null) clearTimeout(searchStartTimeout);  
-    		searchStartTimeout = setTimeout(function() { artikelsuche($('#searchInput').val(), $('#avkCheck').prop('checked'), ergebnis); }, searchStartDelay);   
+    		searchStartTimeout = setTimeout(function() { artikelsuche($('#searchInput').val(), $('#avkCheck').prop('checked'), $("input[name='abdataCheck']:checked").val(), ergebnis); }, searchStartDelay);   
     		console.log('Verzögere Suche um '+searchStartDelay+' ms.');
     });
     
-    var sfd = $('<div>', {'class':'form-group form-check">'}).appendTo(sf);
-    $('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sf).on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), ergebnis); });;
-    $('<label>', {'for':'avkCheck', 'class':'form-check-label'}).appendTo(sf).append('Nur Artikel mit unterschiedlichen AVKs an den verschiedenen Standorten');
+    sfd = $('<div>', {'class':'form-group form-check'}).appendTo(sf);
+    $('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sfd).on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), $("input[name='abdataCheck']:checked").val(), ergebnis); });;
+    $('<label>', {'for':'avkCheck', 'class':'form-check-label'}).appendTo(sfd).append('Nur Artikel mit unterschiedlichen AVKs an den verschiedenen Standorten');
 
+    sfd = $('<div>', {'class':'form-group form-check'}).appendTo(sf);
+    
+    var radios = [{'text':'Alle Artikel', 'value':'', 'checked':false}, {'text':'Nur ABDATA-Artikel', 'value':'1', 'checked':true}, {'text':'Nur eigenangelegte Artikel', 'value':'0', 'checked':false}];
+    var radio_group = 'abdataCheck';
+    
+    for(let i = 0; i < radios.length; ++i) {
+       	let sfc = $('<div>', {'class':'form-check form-check-inline'}).appendTo(sfd);
+       	let e = radios[i];
+      	let cc = {'type':'radio', 'class':'form-check-input', 'id':radio_group+i, 'name':radio_group, 'value':e['value']};
+      	if(e['checked']) {
+    		cc['checked'] = 'checked';
+    	}       	
+    	let input = $('<input>', cc).appendTo(sfc); //.on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), ergebnis); });;
+    	$('<label>', {'for':radio_group+i, 'class':'form-check-label'}).appendTo(sfc).append(e['text']);
+    }
 });
 

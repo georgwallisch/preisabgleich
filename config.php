@@ -6,12 +6,14 @@
 	
 	$standorte = array();
 	/* DB-Feld => CSV-Spalte */
-	$artikelfelder = array('pzn' => 'PZN', 'name' => 'Artikelname', 'df' => 'DF', 'pm' => 'PM', 'pe' => 'PE', 'hersteller' => 'Herstellerkürzel', 'ek' => 'EK', 'vk' => 'VK');
-	$artikelbind = array('pzn' => 'i', 'name' => 's', 'df' => 's', 'pm' => 's', 'pe' => 's', 'hersteller' => 's', 'ek' => 'd', 'vk' => 'd');
+	$artikelfelder = array('pzn' => 'PZN', 'name' => 'Artikelname', 'df' => 'DF', 'pm' => 'PM', 'pe' => 'PE', 'hersteller' => 'Herstellerkürzel', 'ek' => 'EK', 'vk' => 'VK', 'AM' => 'AM', 'DC' => 'DC', 'MP' => 'MP', 'LM' => 'LM', 'KM' => 'KM', 'ABDATA' => 'ABDATA');
+	$artikelbind = array('pzn' => 'i', 'name' => 's', 'df' => 's', 'pm' => 's', 'pe' => 's', 'hersteller' => 's', 'ek' => 'd', 'vk' => 'd', 'AM' => 'i', 'DC' => 'i', 'MP' => 'i', 'LM' => 'i', 'KM' => 'i', 'ABDATA' => 'i');
 	$preisfelder = array('eek' => 'EEK', 'evk' => 'EVK', 'avk' => 'AVK', 'lager' => 'Lager', 'bestand' => 'Bestand', 'preisaktion' => 'Preisaktion', 'ap' => 'AP', 'kalkulationsmodell' => 'Kalkulationsmodell');
 	$preisbind = array('eek' => 'd', 'evk' => 'd', 'avk' => 'd', 'lager' => 'i', 'bestand' => 'i', 'preisaktion' => 's', 'ap' => 'd', 'kalkulationsmodell' => 's');
 	
-	$csvfelder = array('Artikelsortiername', 'PZN', 'Artikelname', 'DF', 'PM', 'PE', 'Herstellerkürzel', 'Lager', 'Bestand', 'EK', 'EEK', 'AVK', 'VK', 'EVK', 'Preisaktion', 'AP', 'Kalkulationsmodell');
+	$bools = array('lager','AM', 'DC', 'MP','LM','KM', 'ABDATA');
+	
+	$csvfelder = array('Artikelsortiername', 'PZN', 'Artikelname', 'DF', 'PM', 'PE', 'Herstellerkürzel', 'Lager', 'Bestand', 'EK', 'EEK', 'AVK', 'VK', 'EVK', 'Preisaktion', 'AP', 'Kalkulationsmodell', 'AM', 'DC', 'MP', 'LM', 'KM', 'ABDATA');
 		
 	$csv_separator = ';';
 	$csv_encoding = 'Windows-1252';

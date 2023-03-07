@@ -87,8 +87,16 @@
 							$data[$v] = str_replace(',','.',$rawdata[$k]);
 						} elseif($csvbind[$v] == 's') {
 							$data[$v] = mb_convert_encoding($rawdata[$k], $db_encoding, $csv_encoding);
-						} elseif($v == 'Lager') {
-							$data[$v] = ($rawdata[$k] == 'ja') ? 1 : 0;
+						} elseif($csvbind[$v] == 'i') {
+							if(in_array($v, $bools)) {
+									if(substr_compare($rawdata[$k],'ja',0,2,true) == 0 or substr_compare($rawdata[$k],'ABDATA',0,6) == 0) {
+										$data[$v] = 1;
+									} else {
+										$data[$v] = 0;
+									}
+							} else {
+								$data[$v] = $rawdata[$k];
+							}
 						} else {
 							$data[$v] = $rawdata[$k];
 						}						
@@ -105,7 +113,7 @@
 						foreach($artikelfelder as $k => $v) {
 								$values[] = $data[$v];
 						}
-						$st_insert->bind_param('i'.implode('', array_values($artikelbind)), $lastupdate, $values[0], $values[1], $values[2], $values[3], $values[4], $values[5], $values[6], $values[7]);			
+						$st_insert->bind_param('i'.implode('', array_values($artikelbind)), $lastupdate, $values[0], $values[1], $values[2], $values[3], $values[4], $values[5], $values[6], $values[7], $values[8], $values[9], $values[10], $values[11], $values[12], $values[13]);			
 						$st_insert->execute();
 						++$newcounter;
 					} else {

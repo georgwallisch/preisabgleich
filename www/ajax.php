@@ -52,50 +52,145 @@
 		if($die) exit;
 	}
 	
+	function get_distinct_list($table, $col) {
+		global $db;
+		
+		$list = array();
+		
+		$st = $db->prepare('SELECT DISTINCT(`'.$col.'`) FROM `'.$table.'` where `'.$col.'` IS NOT null ORDER BY `'.$col.'`');
+		$st->execute();
+		
+		$res = $st->get_result();
+		
+		if($res->num_rows > 0) {
+			while($row = $res->fetch_row()) {
+				$list[] = $row[0];
+			}    			
+		}
+		
+		$res->free();
+		
+		return $list;	
+	}
+	
+	function get_stand($table, $include_count = true) {
+		global $db, $db_datetime_format, $db_datetime_format;
+		
+		$list = array();
+		
+		$q = 'SELECT DATE_FORMAT(MIN(`stand`),?), DATE_FORMAT(MAX(`stand`),?)';
+		
+		if($include_count) {
+			$q .= ', COUNT(*)';
+		}
+		
+		$q .= ' FROM `'.$table.'`';
+		
+		$st = $db->prepare($q);
+
+		$st->bind_param('ss', $db_datetime_format, $db_datetime_format);
+		
+		if($st === false) {
+			send_reply(array('error' => 'MySQL Syntax Error', 'MySQL Error Details' => $db->error));
+		}
+
+		$st->execute();
+		
+		$res = $st->get_result();
+		
+		if($res->num_rows > 0) {
+			$row = $res->fetch_row();
+			$list[$table.'_min_stand'] = $row[0];
+			$list[$table.'_max_stand'] = $row[1];
+			if($include_count) {
+				$list[$table] = $row[2];
+			}
+		}
+		
+		$res->free();
+		
+		return $list;
+	}
+	
 	/* main code starts here */
 
 
 	
 	ob_start();
 	
-	require_once '../config.php';	
+	require_once '../config.php';
+	
+	$search  = array('*', '?', ' ');
+	$replace = array('%', '_', '%');
 	
 	$reply = array();
 	
-	if(!is_null($s = get_value('artikelsuche'))) {
-		$reply['search'] = $s;
+	$st = null;
+	
+	if(!is_null($s = get_value('pzn'))) {
+		
+		$st = $db->prepare('SELECT *, id as artikel_id FROM artikel WHERE pzn=? ORDER BY name, pm');
+		$st->bind_param('i', $s);
+		$reply['search_type'] = 'pzn';
+	
+	} elseif(!is_null($s = get_value('pznmin')) and !is_null($ss = get_value('pznmax'))) {
+		
+		$st = $db->prepare('SELECT *, id as artikel_id FROM artikel WHERE pzn>=? AND pzn<=? ORDER BY name, pm');
+		$st->bind_param('ii', $s, $ss);
+		$reply['search_type'] = 'pznrange';
+	
+	} elseif(!is_null($s = get_value('artikelsuche'))) {
+		
 		$diff = get_value('diff');
-			
-		if(strlen($s) >= $min_search_length) {
-			if(!is_null($diff)) {
-				$st = $db->prepare('SELECT * FROM `artikel` INNER JOIN `preise` ON preise.artikel_id=artikel.id WHERE name LIKE UPPER(?) GROUP BY preise.artikel_id HAVING COUNT(DISTINCT(preise.'.$diff.')) > 1 ORDER BY artikel.name, artikel.pm');
-			} else {
-				$st = $db->prepare('SELECT *, id as artikel_id FROM artikel WHERE name LIKE UPPER(?) ORDER BY name, pm');
-			}
-			if($st === false) {
-				send_reply(array('error' => 'MySQL Syntax Error', 'MySQL Error Details' => $db->error));
-			}
-			$search  = array('*', '?', ' ');
-			$replace = array('%', '_', '%');
-			$ss = str_replace($search, $replace, $s).'%';
-			$st->bind_param('s', $ss);
-			$st->execute();
-			$result = $st->get_result();
-			if($result->num_rows < 1) {
-				send_reply(array('found' => 0, 'message' => 'Kein Treffer!'));
-			} else {
-				$reply['found'] = $result->num_rows;
-				$hitlist = array();
-				while ($row = $result->fetch_assoc()) {
-					$hitlist[] = $row;
-				}    			
-				$reply['hitlist'] = $hitlist;
+		$abdata = get_value('abdata');
 				
+		$reply['search_type'] = 'artikelname';
+                               
+		$q = null;
+		
+		if(!is_null($diff)) {
+			$q = 'SELECT * FROM `artikel` INNER JOIN `preise` ON preise.artikel_id=artikel.id WHERE name LIKE UPPER(?)';
+			if(!is_null($abdata)) {
+				$q .= ' AND ABDATA=?';
 			}
+			$q .= ' GROUP BY preise.artikel_id HAVING COUNT(DISTINCT(preise.'.$diff.')) > 1 ORDER BY artikel.name, artikel.pm';
+		} else if(strlen($s) >= $min_search_length) {
+			$q = 'SELECT *, id as artikel_id FROM artikel WHERE name LIKE UPPER(?)';
+			if(!is_null($abdata)) {
+				$q .= ' AND ABDATA=?';
+			}
+			 $q .= ' ORDER BY name, pm';
 		} else {
 			$reply['error'] = 'Suchanfrage zu kurz!';
 		}
-		
+			
+		if(!is_null($q)) {
+			$st = $db->prepare($q);
+			$ss = str_replace($search, $replace, $s).'%';
+			if(!is_null($abdata)) {
+				$st->bind_param('si', $ss, $abdata);	
+			} else {
+				$st->bind_param('s', $ss);
+			}
+		}		
+	}
+	
+	if($st === false) {
+		send_reply(array('error' => 'MySQL Syntax Error', 'MySQL Error Details' => $db->error));
+	} elseif (!is_null($st)) {
+		$reply['search'] = $s;
+		$st->execute();
+		$result = $st->get_result();
+		if($result->num_rows < 1) {
+			send_reply(array('found' => 0, 'message' => 'Kein Treffer!'));
+		} else {
+			$reply['found'] = $result->num_rows;
+			$hitlist = array();
+			while ($row = $result->fetch_assoc()) {
+				$hitlist[] = $row;
+			}    			
+			$reply['hitlist'] = $hitlist;	
+		}
 		send_reply(null);
 	}
 	
@@ -122,29 +217,22 @@
 		}
 		send_reply(null);
 	}
-	
-	$st = $db->prepare('SELECT COUNT(*), DATE_FORMAT(MIN(`stand`),?), DATE_FORMAT(MAX(`stand`),?) FROM `artikel`');
-	$st->bind_param('ss', $db_datetime_format, $db_datetime_format);
-	$st->execute();
-	$res = $st->get_result();
-	$row = $res->fetch_row();
-	$reply['artikel'] = $row[0];
-	$reply['artikel_min_stand'] = $row[1];
-	$reply['artikel_max_stand'] = $row[2];
-	$res->free();
-	
-	$st = $db->prepare('SELECT DATE_FORMAT(MIN(`stand`),?), DATE_FORMAT(MAX(`stand`),?) FROM `preise`');
-	$st->bind_param('ss', $db_datetime_format, $db_datetime_format);
-	$st->execute();
-	$res = $st->get_result();
-	$row = $res->fetch_row();
-	$reply['preise_min_stand'] = $row[0];
-	$reply['preise_max_stand'] = $row[1];
-	$res->free();
+	$a = get_stand('artikel');
+	echo "\n\n=== Artikelinfo ===\n";
+	print_r($a);
+	echo "\n\n=== Preisinfo ===\n";
+	$b = get_stand('preise', false);
+	print_r($b);
+	$reply = array_merge($reply, $a, $b);
+			
+	$reply['hersteller'] = get_distinct_list('artikel', 'hersteller');
+	$reply['df'] = get_distinct_list('artikel', 'df');
+	$reply['kalkulationsmodelle'] = get_distinct_list('preise', 'kalkulationsmodell');
 	
 	$reply['min_search_length'] = $min_search_length;
 	$reply['standorte'] = $standorte;
 	
 	send_reply(null, false);
-
+	
+	ob_end_clean();
 ?>
