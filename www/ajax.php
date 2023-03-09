@@ -143,19 +143,32 @@
 		
 		$diff = get_value('diff');
 		$abdata = get_value('abdata');
+		$arttype = get_value('arttype');
 				
 		$reply['search_type'] = 'artikelname';
-                               
+        
+		$filter = '';
+		
+		if(is_array($arttype)) {
+			$a = array();
+			foreach($arttype as $v) {
+				if(array_key_exists($v, $artikeltypen)) {
+					$a[] = '`'.$v.'`=TRUE';
+				}
+			}
+			$filter .= ' AND ('.implode($a, ' OR ').')';			
+		}
+		
 		$q = null;
 		
 		if(!is_null($diff)) {
-			$q = 'SELECT * FROM `artikel` INNER JOIN `preise` ON preise.artikel_id=artikel.id WHERE name LIKE UPPER(?)';
+			$q = 'SELECT * FROM `artikel` INNER JOIN `preise` ON preise.artikel_id=artikel.id WHERE name LIKE UPPER(?)'.$filter;
 			if(!is_null($abdata)) {
 				$q .= ' AND ABDATA=?';
 			}
 			$q .= ' GROUP BY preise.artikel_id HAVING COUNT(DISTINCT(preise.'.$diff.')) > 1 ORDER BY artikel.name, artikel.pm';
 		} else if(strlen($s) >= $min_search_length) {
-			$q = 'SELECT *, id as artikel_id FROM artikel WHERE name LIKE UPPER(?)';
+			$q = 'SELECT *, id as artikel_id FROM artikel WHERE name LIKE UPPER(?)'.$filter;
 			if(!is_null($abdata)) {
 				$q .= ' AND ABDATA=?';
 			}
@@ -231,6 +244,8 @@
 	
 	$reply['min_search_length'] = $min_search_length;
 	$reply['standorte'] = $standorte;
+	$reply['artikeltypen'] = $artikeltypen;
+	$reply['artikeltypen_default'] = $artikeltypen_default;
 	
 	send_reply(null, false);
 	

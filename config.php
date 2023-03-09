@@ -13,6 +13,9 @@
 	
 	$bools = array('lager','AM', 'DC', 'MP','LM','KM', 'ABDATA');
 	
+	$artikeltypen = array('AM' => 'Arzneimittel', 'DC' => 'Drogen/Chemikalien', 'MP' => 'Medizinprodukte','LM' => 'Lebensmittel','KM' => 'Kosmetika');
+	$artikeltypen_default = array('AM', 'MP', 'LM', 'KM');
+	
 	$csvfelder = array('Artikelsortiername', 'PZN', 'Artikelname', 'DF', 'PM', 'PE', 'Herstellerkürzel', 'Lager', 'Bestand', 'EK', 'EEK', 'AVK', 'VK', 'EVK', 'Preisaktion', 'AP', 'Kalkulationsmodell', 'AM', 'DC', 'MP', 'LM', 'KM', 'ABDATA');
 		
 	$csv_separator = ';';

@@ -1,5 +1,8 @@
 const ajax_url = "ajax.php";
 let standorte = [];
+let artikeltypen = [];
+let artikeltypen_default = [];
+
 var min_search_length = 3;
 var searchStartTimeout = null;
 const searchStartDelay = 300;
@@ -97,11 +100,8 @@ function getAjax(params) {
 			p = {};
 		}	
 		$.ajax({
-			'async': true,
 			'url': ajax_url,
-			'method': 'GET',
-		/*	'dataType': 'json', */
-		/*	'contentType': 'application/json', */			
+			'method': 'POST',
             'data': p,
 			'headers': {
 						'cache-control': 'no-cache',
@@ -121,31 +121,34 @@ function getAjax(params) {
 
 }
 
-function artikelsuche(suchstring, avkcheck, abdatacheck, output) {
-		
-	if(typeof suchstring != 'string' ) {
-		$(output).empty();
-		$('<p>', {'class':'text-danger'}).appendTo(output).append('Suchanfrage ist kein String!');
-		return;
+function artikelsuche(output) {
+
+	let suchstring = $('#searchInput').val();
+	let avkcheck = $('#avkCheck').prop('checked')
+	let abdatacheck = $("input[name='abdataCheck']:checked").val();
+
+	let p = {'artikelsuche':suchstring};
+	
+	let arttypes = [];
+	$("input[name='arttype[]']:checked").each(function(){arttypes.push($(this).val());});
+	
+	if(arttypes.length > 0) {
+		p['arttype'] = arttypes;
 	}
 	
-	var p = {'artikelsuche':suchstring};
+	if(avkcheck == true) {
+		p['diff'] = 'avk';
+	}	
 	
-	if(typeof avkcheck == 'boolean' ) {
-		if(avkcheck == true) {
-			p['diff'] = 'avk';
-		}	
+	if(typeof abdatacheck == 'string') {
+		p['abdata'] = abdatacheck;
 	}
-	
-	if(typeof abdatacheck == 'string' ) {
-			p['abdata'] = abdatacheck;
-	}
-	
+			
 	//console.log('AVK-Check ist '+avkcheck+' ('+(typeof avkcheck)+' )');
 	
 	if(avkcheck != true && suchstring.length < min_search_length) {
 		$(output).empty();
-		$('<p>', {'class':'text-warning'}).appendTo(output).append('Suchanfrage ist zu kurz!');
+		$('<p>', {'class':'text-warning'}).append('Suchanfrage ist zu kurz!').appendTo(output);
 		console.log('Suchestring '+suchstring+' ist zu kurz. (Min. '+min_search_length+' Zeichen)');
 		return;
 	}
@@ -157,18 +160,19 @@ function artikelsuche(suchstring, avkcheck, abdatacheck, output) {
 	getAjax(p).done(function (r) {
 			$(output).empty();
 			if(typeof r['error'] == 'string') {
-				$('<p>', {'class':'text-warning'}).appendTo(output).append(r['error']);
-				return;
+				 $('<p>', {'class':'text-warning'}).append(r['error']).appendTo(output);
+				 return;
 			}		
 			if(r['found'] > 0 ) {
-				$('<p>', {'class':'text-info'}).appendTo(output).append(r['found']+' Treffer:');
+				$('<p>', {'class':'text-info'}).append(r['found']+' Treffer:').appendTo(output);
 				
 				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK','ABDATA':'ABDATA-Artikel?'};
 				var h = r['hitlist'];
 				generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk'], ['ABDATA']).appendTo(output);
-
+				return;
 			} else {
-				$('<p>', {'class':'text-info'}).appendTo(output).append('Kein Treffer zu dieser Suche!');
+				$('<p>', {'class':'text-info'}).append('Kein Treffer zu dieser Suche!').appendTo(output);
+				return;
 			}		
 	});	
 }
@@ -221,6 +225,55 @@ function calcMode(data) {
 
 function isArray(value) {
   return Array.isArray(value);
+}
+
+
+function generateFormgroup(optionlist, groupname, checktype, inline) {
+	
+	if(typeof optionlist != 'object') {
+		return $('<p>', {'class':'text-danger'}).append('Keine Trefferliste!! Sondern: '+(typeof optionlist));
+	}
+	
+	if(typeof groupname != 'string') {
+		return $('<p>', {'class':'text-danger'}).append('Kein Name für Auswahlgruppe angegeben!');
+	}
+	
+	if(checktype != 'radio' && checktype != 'checkbox') {
+		return $('<p>', {'class':'text-danger'}).append('Unbekannter Typ: '+checktype+'!');
+	}
+	
+	var divclass = 'form-check';
+	
+	if(inline) {
+		divclass += ' form-check-inline';
+	}		
+		
+	var formgroup = $('<div>', {'class':'form-group form-check'});
+  
+    for(let i = 0; i < optionlist.length; ++i) {
+       	let div = $('<div>', {'class':divclass}).appendTo(formgroup);
+       	let e = optionlist[i];
+       	let cc = {'class':'form-check-input', 'id':groupname+i, 'value':e['value']};
+       	
+       	if(checktype == 'radio') {
+       		cc['type'] = 'radio'
+       		cc['name'] = groupname;
+       	}
+       	
+       	if(checktype == 'checkbox') {
+       		cc['type'] = 'checkbox'
+       		cc['name'] = groupname+'[]';
+       	}
+       	
+      	if(e['checked']) {
+    		cc['checked'] = 'checked';
+    	} 
+      	
+    	let input = $('<input>', cc).appendTo(div); //.on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), ergebnis); });;
+    	$('<label>', {'for':groupname+i, 'class':'form-check-label'}).appendTo(div).append(e['text']);
+    }
+
+    return formgroup;
 }
 
 function generateTable(hitlist, column_map, table_id, simpletable, price_cols, bool_cols, table_class, thead_class) {
@@ -455,54 +508,61 @@ $(document).ready(function() {
 	
 	getAjax().done(function (r) {
 
-			standorte = r['standorte'];
-			//debug2box(standorte);
-			var info = $('<div>', {'class':'container mt-4','id':'c_info'}).appendTo(mainbox);
-			$('<p>').appendTo(info).append('Es sind '+r['artikel']+' Artikeldatensätze vorhanden.');
-			$('<p>').appendTo(info).append('Datenstand Artikel: '+r['artikel_min_stand']+' - '+r['artikel_max_stand']+'<br />Datenstand Preise: '+r['preise_min_stand']+' - '+r['preise_max_stand']);
-			var ul = $('<ul>').appendTo(info);
-			for(i in standorte) {
-				let s = standorte[i];
-				//debug2box(s);
-				$('<li>').appendTo(ul).append(s['name']);
+		standorte = r['standorte'];
+		artikeltypen = r['artikeltypen'];
+		artikeltypen_default = r['artikeltypen_default'];
+		//debug2box(standorte);
+		
+		var suche = $('<div>', {'class':'container my-2','id':'c_suche'}).appendTo(mainbox);
+		var ergebnis = $('<div>', {'class':'container my-2','id':'c_ergebnis'}).appendTo(mainbox);
+		var sf  = $('<form>').appendTo(suche);
+		let sfd = $('<div>', {'class':'form-group'}).appendTo(sf);
+		
+		$('<label>', {'for':'searchInput'}).appendTo(sfd).append('Artikelsuche');
+		$('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sfd).on('input', function(){ 
+				if(searchStartTimeout != null) clearTimeout(searchStartTimeout);  
+				searchStartTimeout = setTimeout(function() { artikelsuche(ergebnis); }, searchStartDelay);   
+				console.log('Verzögere Suche um '+searchStartDelay+' ms.');
+		});
+		
+		sfd = $('<div>', {'class':'form-group form-check'}).appendTo(sf);
+		$('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sfd).on('change', function(){ artikelsuche(ergebnis); });		
+		$('<label>', {'for':'avkCheck', 'class':'form-check-label'}).appendTo(sfd).append('Nur Artikel mit unterschiedlichen AVKs an den verschiedenen Standorten');
+	
+		let options = [{'text':'Alle Artikel', 'value':'', 'checked':false}, {'text':'Nur ABDATA-Artikel', 'value':'1', 'checked':true}, {'text':'Nur eigenangelegte Artikel', 'value':'0', 'checked':false}];
+		   
+		generateFormgroup(options, 'abdataCheck', 'radio', true).appendTo(sf);
+		
+		options = [];
+		
+		for(let k in artikeltypen) {
+			let e = {'text':artikeltypen[k], 'value':k, 'checked':false};
+			if(artikeltypen_default.includes(k)) {
+				e['checked'] = true;
 			}
-			if(typeof r['min_search_length'] == 'number') {
-				min_search_length = r['min_search_length'];
-				console.log('Server sagt minimale Suchlänge ist '+min_search_length+' Zeichen.');
-			}
-			$('#main-spinner').remove();			
+			options.push(e); 
+		}
+		
+		generateFormgroup(options, 'arttype', 'checkbox', true).appendTo(sf);
+		
+		var info = $('<div>', {'class':'container mt-4','id':'c_info'}).appendTo(mainbox);
+		$('<p>').appendTo(info).append('Es sind '+r['artikel']+' Artikeldatensätze vorhanden.');
+		$('<p>').appendTo(info).append('Datenstand Artikel: '+r['artikel_min_stand']+' - '+r['artikel_max_stand']+'<br />Datenstand Preise: '+r['preise_min_stand']+' - '+r['preise_max_stand']);
+		/*
+		var ul = $('<ul>').appendTo(info);
+		for(i in standorte) {
+			let s = standorte[i];
+			//debug2box(s);
+			$('<li>').appendTo(ul).append(s['name']);
+		}
+		if(typeof r['min_search_length'] == 'number') {
+			min_search_length = r['min_search_length'];
+			console.log('Server sagt minimale Suchlänge ist '+min_search_length+' Zeichen.');
+		}*/
+    
+    	$('#main-spinner').remove();			
 	});
-	
-	var suche = $('<div>', {'class':'container my-2','id':'c_suche'}).appendTo(mainbox);
-	var ergebnis = $('<div>', {'class':'container my-2','id':'c_ergebnis'}).appendTo(mainbox);
-	var sf  = $('<form>').appendTo(suche);
-	let sfd = $('<div>', {'class':'form-group'}).appendTo(sf);
-	
-	$('<label>', {'for':'searchInput'}).appendTo(sfd).append('Artikelsuche');
-    $('<input>', {'type':'text', 'class':'form-control', 'id':'searchInput', 'aria-describedby':'searchHelp'}).appendTo(sfd).on('input', function(){ 
-    		if(searchStartTimeout != null) clearTimeout(searchStartTimeout);  
-    		searchStartTimeout = setTimeout(function() { artikelsuche($('#searchInput').val(), $('#avkCheck').prop('checked'), $("input[name='abdataCheck']:checked").val(), ergebnis); }, searchStartDelay);   
-    		console.log('Verzögere Suche um '+searchStartDelay+' ms.');
-    });
-    
-    sfd = $('<div>', {'class':'form-group form-check'}).appendTo(sf);
-    $('<input>', {'type':'checkbox', 'class':'form-check-input', 'id':'avkCheck'}).appendTo(sfd).on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), $("input[name='abdataCheck']:checked").val(), ergebnis); });;
-    $('<label>', {'for':'avkCheck', 'class':'form-check-label'}).appendTo(sfd).append('Nur Artikel mit unterschiedlichen AVKs an den verschiedenen Standorten');
 
-    sfd = $('<div>', {'class':'form-group form-check'}).appendTo(sf);
-    
-    var radios = [{'text':'Alle Artikel', 'value':'', 'checked':false}, {'text':'Nur ABDATA-Artikel', 'value':'1', 'checked':true}, {'text':'Nur eigenangelegte Artikel', 'value':'0', 'checked':false}];
-    var radio_group = 'abdataCheck';
-    
-    for(let i = 0; i < radios.length; ++i) {
-       	let sfc = $('<div>', {'class':'form-check form-check-inline'}).appendTo(sfd);
-       	let e = radios[i];
-      	let cc = {'type':'radio', 'class':'form-check-input', 'id':radio_group+i, 'name':radio_group, 'value':e['value']};
-      	if(e['checked']) {
-    		cc['checked'] = 'checked';
-    	}       	
-    	let input = $('<input>', cc).appendTo(sfc); //.on('change', function(){ artikelsuche($('#searchInput').val(), $(this).prop('checked'), ergebnis); });;
-    	$('<label>', {'for':radio_group+i, 'class':'form-check-label'}).appendTo(sfc).append(e['text']);
-    }
 });
+
 
