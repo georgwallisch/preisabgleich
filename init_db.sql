@@ -19,9 +19,7 @@ CREATE TABLE `artikel` (
   `KM` tinyint(1) DEFAULT NULL,
   `ABDATA` tinyint(1) DEFAULT NULL,
   `dirty` tinyint(1) DEFAULT NULL,
-  `stand` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `pzn` (`pzn`)
+  `stand` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 DROP TABLE IF EXISTS `preise`;
@@ -38,10 +36,7 @@ CREATE TABLE `preise` (
   `ap` decimal(6,2) DEFAULT NULL,
   `kalkulationsmodell` varchar(100) DEFAULT NULL,
   `dirty` tinyint(1) DEFAULT NULL,
-  `stand` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `artikel_id` (`artikel_id`),
-  KEY `standort_id` (`standort_id`)
+  `stand` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 DROP TABLE IF EXISTS `pzns`;
@@ -53,10 +48,6 @@ CREATE TABLE `pzns` (
   `dirty` tinyint(1) DEFAULT NULL,
   `stand` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-ALTER TABLE `pzns`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `artikel_id` (`artikel_id`);
 
 DROP TABLE IF EXISTS `standorte`;
 CREATE TABLE `standorte` (
@@ -71,6 +62,19 @@ INSERT INTO `standorte` (`id`, `idf`, `name`, `kurz`) VALUES
 (2, 3321957, 'Eschenbach', 'ESB'),
 (3, 4549705, 'Windischeschenbach', 'WESB'),
 (4, 4517740, 'Weiden', 'AEWEN');
+
+ALTER TABLE `artikel`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `pzn` (`pzn`);
+
+ALTER TABLE `preise`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `artikel_id` (`artikel_id`),
+  ADD KEY `standort_id` (`standort_id`);
+
+ALTER TABLE `pzns`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `artikel_id` (`artikel_id`);
 
 ALTER TABLE `standorte`
   ADD PRIMARY KEY (`id`),
