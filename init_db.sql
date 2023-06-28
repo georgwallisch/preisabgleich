@@ -18,6 +18,7 @@ CREATE TABLE `artikel` (
   `LM` tinyint(1) DEFAULT NULL,
   `KM` tinyint(1) DEFAULT NULL,
   `ABDATA` tinyint(1) DEFAULT NULL,
+  `MWST` varchar(25) DEFAULT NULL,
   `dirty` tinyint(1) DEFAULT NULL,
   `stand` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

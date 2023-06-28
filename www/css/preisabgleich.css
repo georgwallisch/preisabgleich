@@ -25,6 +25,10 @@ h1.company {
   padding-bottom: 1em;
 }
 
+table.subliste {
+  margin-bottom: 0;
+}
+
 .plus-button::before {
   content: "+";
 }
@@ -34,8 +38,8 @@ h1.company {
 }
 
 .moreinfo {
-	padding: 1em 2em;
-
+	/* padding: 1em 2em; */
+	padding: 0;
 }
 
 .preis {

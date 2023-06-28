@@ -166,7 +166,7 @@ function artikelsuche(output) {
 			if(r['found'] > 0 ) {
 				$('<p>', {'class':'text-info'}).append(r['found']+' Treffer:').appendTo(output);
 				
-				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK','ABDATA':'ABDATA-Artikel?'};
+				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK','ABDATA':'ABDATA-Artikel?','MWST':'MwSt'};
 				var h = r['hitlist'];
 				generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk'], ['ABDATA']).appendTo(output);
 				return;

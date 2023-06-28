@@ -247,6 +247,12 @@
 	$reply['artikeltypen'] = $artikeltypen;
 	$reply['artikeltypen_default'] = $artikeltypen_default;
 	
+	$reply['mwst'] = array();
+	
+	foreach($mwst_arten as $k => $v) {
+		$reply['mwst'][$v] = $mwst_satz[$k]; 	
+	}
+	
 	send_reply(null, false);
 	
 	ob_end_clean();
