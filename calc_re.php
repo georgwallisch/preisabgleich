@@ -5,11 +5,16 @@
 	
 	$st_artikel = $db->prepare('SELECT * FROM artikel');
 	$st_preis = $db->prepare('SELECT * FROM preise WHERE artikel_id=?');
-	$st_update = $db->prepare('UPDATE preise SET re_ek=?, re_eek=? WHERE id=? LIMIT 1');
+	$st_update_re = $db->prepare('UPDATE preise SET re_ek=?, re_eek=? WHERE id=? LIMIT 1');
+	$st_update_re_ek_rel = $db->prepare('UPDATE preise SET re_ek_rel=? WHERE id=? LIMIT 1');
+	$st_update_re_eek_rel = $db->prepare('UPDATE preise SET re_eek_rel=? WHERE id=? LIMIT 1');
+	$st_clear = $db->prepare('UPDATE preise SET re_ek_rel=NULL, re_eek_rel=NULL WHERE 1');
 	
 	$counter = 0;
 		
 	echo "*** Preisabgleich Update Rohertag ***\n";
+	
+	$st_clear->execute();
 			
 	$st_artikel->execute();
 	$result_artikel = $st_artikel->get_result();
@@ -30,8 +35,21 @@
 					$netto = round($preis['avk'], 2);
 					$re_ek = $netto - $artikel['ek'];
 					$re_eek = $netto - $preis['eek'];	
-					$st_update->bind_param('ddi', $re_ek, $re_eek, $preis['id']);
-					$st_update->execute();
+					$st_update_re->bind_param('ddi', $re_ek, $re_eek, $preis['id']);
+					$st_update_re->execute();
+					
+					if($artikel['ek'] > 0) {
+						$re = round($re_ek/$artikel['ek']*100);
+						$st_update_re_ek_rel->bind_param('ii', $rel, $preis['id']);
+						$st_update_re_ek_rel->execute();
+					}
+					
+					if($preis['eek'] > 0) {
+						$rel = round($re_eek/$preis['eek']*100);						
+						$st_update_re_eek_rel->bind_param('ii', $rel, $preis['id']);
+						$st_update_re_eek_rel->execute();
+					}					
+					
 					//echo "Artikel ".$artikel['id']." Mwst: $mwst; Netto: $netto; RE-EK: $re_ek; RE-EEK: $re_eek;\n";  
 				}
 			}

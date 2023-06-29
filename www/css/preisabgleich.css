@@ -52,6 +52,11 @@ table.subliste {
 	color: lightgray;
 }
 
+.negativ {
+	color: red !important; 
+	font-weight: bold !important;
+}
+
 /*
 .gt_than_avg, .lt_than_avg {
 	background-color: #ffcccc;

@@ -429,7 +429,9 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 				cc = {'class':'preis'};
 				if(cnum == 0) {
 					cc['class'] += ' isnull';
-				}
+				} else if (cnum < 0) {
+					cc['class'] += ' negativ';
+				} 
 						
 				if(simpletable) {
 					if(prices_mode[c].length == 1) {
@@ -481,9 +483,9 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 				getAjax(pp).done(function (rr) {
 					$(rdiv).empty();
 					if(rr['found'] > 0 ) {
-						var cl = {'name':'Standort', 'eek':'EEK', 'evk':'EVK', 'avk':'AVK', 'kalkulationsmodell':'Kalkulationsmodell'}; 
+						var cl = {'name':'Standort', 'eek':'EEK', 'evk':'EVK', 'avk':'AVK', 're_ek':'RE (EK)','re_eek':'RE (EEK)', 'kalkulationsmodell':'Kalkulationsmodell'}; 
 						var hh = rr['hitlist'];
-						generateTable(hh, cl, row_id+'_tab', true, ['eek', 'evk', 'avk'], [], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);	
+						generateTable(hh, cl, row_id+'_tab', true, ['eek', 'evk', 'avk', 're_ek', 're_eek'], [], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);	
 					}
 				});
 				
