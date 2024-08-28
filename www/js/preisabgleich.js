@@ -168,7 +168,8 @@ function artikelsuche(output) {
 				
 				var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK','ABDATA':'ABDATA-Artikel?','MWST':'MwSt'};
 				var h = r['hitlist'];
-				generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk'], ['ABDATA']).appendTo(output);
+				//generateTable(h, cols, 'suchtreffertabelle', false, ['ek', 'vk'], ['ABDATA']).appendTo(output);
+				generateTable(h, cols, {'table_id':'suchtreffertabelle', 'price_cols':['ek', 'vk'], 'bool_cols':['ABDATA']}).appendTo(output);
 				return;
 			} else {
 				$('<p>', {'class':'text-info'}).append('Kein Treffer zu dieser Suche!').appendTo(output);
@@ -276,12 +277,16 @@ function generateFormgroup(optionlist, groupname, checktype, inline) {
     return formgroup;
 }
 
-function generateTable(hitlist, column_map, table_id, simpletable, price_cols, bool_cols, table_class, thead_class) {
+function generateTable(hitlist, column_map, params) {
+	 //generateTable(hitlist, column_map, table_id, simpletable, price_cols, bool_cols, table_class, thead_class)
 	/* table_class	
 	  var cols = {'pzn':'PZN', 'name':'Bezeichnung', 'df':'DF', 'pm':'PM', 'pe':'PE', 'hersteller':'Hersteller', 'ek':'ABDA-EK', 'vk':'ABDA-VK'};
 	*/
 	
 	//debug2box(hitlist);
+	
+	console.log('Params '+params+' ('+(typeof params)+')');
+	debug2box(params);
 	
 	var table_attr = {};
 	
@@ -295,32 +300,54 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 	
 	// console.log('price_cols '+price_cols+' ('+(typeof price_cols)+')');
 	
-	if(!isArray(price_cols)) {
+	let mode_cols = params['mode_cols'];
+	
+	if(typeof params == 'object' && !isArray(mode_cols)) {
+		mode_cols = [];
+	}
+
+	let price_cols = params['price_cols'];
+	
+	if(typeof params == 'object' && !isArray(price_cols)) {
 		price_cols = [];
 	}
+
+	let rel_cols = params['rel_cols'];
 	
-	if(!isArray(bool_cols)) {
+	if(typeof params == 'object' && !isArray(rel_cols)) {
+		rel_cols = [];
+	}	
+	
+	let bool_cols = params['bool_cols'];
+	
+	if(typeof params == 'object' && !isArray(bool_cols)) {
 		bool_cols = [];
 	}
 	
-	if(typeof table_id == 'string') {
-		table_attr['id'] = table_id;
+	//console.log('bool_cols '+params['bool_cols']+' ('+(typeof params['bool_cols'])+')');
+	
+	if(typeof params == 'object' && typeof params['table_id'] == 'string') {
+		table_attr['id'] = params['table_id'];
+	}                                        
+	                                        
+	//console.log('Simpletable '+simpletable+'prices_mode[c]prices_mode[c] ('+(typeof simpletable)+')');
+	
+	let simpletable = false;
+	
+	if(typeof params == 'object' && typeof params['simpletable'] == 'boolean') {
+		simpletable = params['simpletable'];
 	}
 	
-	//console.log('Simpletable '+simpletable+' ('+(typeof simpletable)+')');
-	
-	if(typeof simpletable != 'boolean') {
-		simpletable = false;
-	}
+	table_attr['class'] = 'table table-hover trefferliste';
 		
-	if(typeof table_class == 'string') {
-		table_attr['class'] = table_class;
-	} else {
-		table_attr['class'] = 'table table-hover trefferliste';
-	}
+	if(typeof params == 'object' && typeof params['table_class'] == 'string') {
+		table_attr['class'] = params['table_class'];
+	} 
 	
-	if(typeof thead_class != 'string') {
-		thead_class = 'thead-light';
+	let thead_class = 'thead-light';
+	
+	if(typeof params == 'object' && typeof params['thead_class'] == 'string') {
+		thead_class = params['thead_class'];
 	}
 	
 //	console.log('Wir erzeugen jetzt eine Tabelle mit '+hitlist.length+' Zeilen');
@@ -373,15 +400,15 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 			}
 		}
 		
-		for(let i in price_cols) {
-			let c = price_cols[i];
+		for(let i in mode_cols) {
+			let c = mode_cols[i];
+			console.log('Mode Col '+i+': '+c);
 			prices_mode[c] = calcMode(prices[c]);			/*
 			avg_prices[c] = Math.round(prices_sum[c] / prices_n[c] * 100)/100;
 			rms_prices[c] = Math.round(Math.sqrt(prices_qsum[c] / prices_n[c]) * 100)/100;
-			*/
-			
+			*/			
 		}
-		
+			
 		debug2box(prices_mode, 'Modus-Werte');
 
 		/*
@@ -410,6 +437,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 		}
 		
 		for(let c in column_map) {
+			if(item[c] == null) continue;
 			let cnum = Number.parseFloat(item[c]);
 			let cc = null;
 			let cval = item[c].toString();
@@ -424,6 +452,14 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 				}
 			}
 			
+			if(rel_cols.includes(c)) {
+					cval = cval.replace('.',',')+' %';
+					cc = {'class':'is_relative'};
+					if (cnum < 0) {
+						cc['class'] += ' negativ';
+					}
+			}
+			
 			if(price_cols.includes(c)) {
 				cval = cval.replace('.',',')+' €';
 				cc = {'class':'preis'};
@@ -433,7 +469,7 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 					cc['class'] += ' negativ';
 				} 
 						
-				if(simpletable) {
+				if(simpletable && typeof prices_mode[c] != 'undefined') {
 					if(prices_mode[c].length == 1) {
 						let pmode = prices_mode[c][0];
 					//*
@@ -483,9 +519,11 @@ function generateTable(hitlist, column_map, table_id, simpletable, price_cols, b
 				getAjax(pp).done(function (rr) {
 					$(rdiv).empty();
 					if(rr['found'] > 0 ) {
-						var cl = {'name':'Standort', 'eek':'EEK', 'evk':'EVK', 'avk':'AVK', 're_ek':'RE (EK)','re_eek':'RE (EEK)', 'kalkulationsmodell':'Kalkulationsmodell'}; 
+						var cl = {'name':'Standort', 'eek':'EEK', 'evk':'EVK', 'avk':'AVK', 're_ek':'RE (EK)', 're_ek_rel':'Aufschlag (EK)', 're_eek':'RE (EEK)', 're_eek_rel':'Aufschlag (EEK)', 'kalkulationsmodell':'Kalkulationsmodell'}; 
 						var hh = rr['hitlist'];
-						generateTable(hh, cl, row_id+'_tab', true, ['eek', 'evk', 'avk', 're_ek', 're_eek'], [], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);	
+						//generateTable(hh, cl, row_id+'_tab', true, ['eek', 'evk', 'avk', 're_ek', 're_eek'], [], 'table table-bordered table-sm table-hover subliste').appendTo(rdiv);
+						generateTable(hh, cl, {'table_id':row_id+'_tab', 'simpletable':true, 'mode_cols':['eek', 'evk', 'avk'], 'price_cols':['eek', 'evk', 'avk', 're_ek', 're_eek'], 'rel_cols':['re_ek_rel', 're_eek_rel'], 'table_class':'table table-bordered table-sm table-hover subliste'}).appendTo(rdiv);	
+
 					}
 				});
 				
